@@ -4,11 +4,24 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/Gfarf/Chirpy/internal/auth"
+	"github.com/Gfarf/Chirpy/internal/database"
 )
+
+func UserMapping(user *database.User) User {
+	res := User{}
+	res.ID = user.ID
+	res.CreatedAt = user.CreatedAt
+	res.UpdatedAt = user.UpdatedAt
+	res.Email = user.Email
+	return res
+}
 
 func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 	type receiveUser struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	userEmail := receiveUser{}
@@ -18,17 +31,19 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	user, err := cfg.dbQueries.CreateUser(r.Context(), userEmail.Email)
+	pWord, err := auth.HashPassword(userEmail.Password)
+	if err != nil {
+		log.Printf("Error hashing user password: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	user, err := cfg.dbQueries.CreateUser(r.Context(), database.CreateUserParams{Email: userEmail.Email, HashedPassword: pWord})
 	if err != nil {
 		log.Printf("Error creating user: %s", err)
 		w.WriteHeader(500)
 		return
 	}
-	res := User{}
-	res.ID = user.ID
-	res.CreatedAt = user.CreatedAt
-	res.UpdatedAt = user.UpdatedAt
-	res.Email = user.Email
+	res := UserMapping(&user)
 	dat, err := json.Marshal(res)
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
