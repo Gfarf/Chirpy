@@ -112,7 +112,7 @@ func (cfg *apiConfig) handlerChirp(w http.ResponseWriter, r *http.Request) {
 	}
 	UserID, err := auth.ValidateJWT(jwt, cfg.secretString)
 	if err != nil {
-		log.Printf("Invalid token: %s", err)
+		log.Printf("Invalid JWT token in chirping: %s", err)
 		w.WriteHeader(401)
 		return
 	}
@@ -183,4 +183,38 @@ func (cfg *apiConfig) handlerGetOneChirp(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write(dat)
+}
+
+func (cfg *apiConfig) handlerDelChirp(w http.ResponseWriter, r *http.Request) {
+	chripID := r.PathValue("chirpID")
+	uuidChirpID, err := uuid.Parse(chripID)
+	if err != nil {
+		log.Printf("Error parsing chirp uuid: %s", err)
+		w.WriteHeader(404)
+		return
+	}
+	c, err := cfg.dbQueries.GetOneChirpByID(r.Context(), uuid.UUID(uuidChirpID))
+	if err != nil {
+		log.Printf("Error getting chirp from database: %s", err)
+		w.WriteHeader(404)
+		return
+	}
+	jwt, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		log.Printf("Error getting Bearer Token: %s", err)
+		w.WriteHeader(401)
+		return
+	}
+	UserID, err := auth.ValidateJWT(jwt, cfg.secretString)
+	if err != nil {
+		log.Printf("Invalid JWT token in chirping: %s", err)
+		w.WriteHeader(401)
+		return
+	}
+	if c.UserID != UserID {
+		log.Printf("User not allowed to delete this chirp: %s", err)
+		w.WriteHeader(403)
+		return
+	}
+	w.WriteHeader(204)
 }

@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net/http"
@@ -79,4 +81,26 @@ func GetBearerToken(headers http.Header) (string, error) {
 	token = strings.TrimPrefix(token, "Bearer ")
 	return token, nil
 
+}
+
+func MakeRefreshToken() (string, error) {
+	// Define the desired length of the random byte slice
+	length := 32
+
+	// Create a byte slice of the specified length
+	b := make([]byte, length)
+
+	// Read cryptographically secure random bytes into the slice
+	// rand.Read returns the number of bytes read and an error, if any.
+	n, err := rand.Read(b)
+	if err != nil {
+		return "", nil
+	}
+
+	// Verify that the correct number of bytes were read
+	if n != length {
+		return "", nil
+	}
+	res := hex.EncodeToString(b)
+	return res, nil
 }

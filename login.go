@@ -11,9 +11,8 @@ import (
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type receiveUser struct {
-		Email      string `json:"email"`
-		Password   string `json:"password"`
-		Expiration *int   `json:"expires_in_seconds,omitempty"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	userEmail := receiveUser{}
@@ -41,16 +40,16 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(500)
 		return
 	}
-	var expires time.Duration
-	if userEmail.Expiration != nil && *userEmail.Expiration < 3600 {
-		expires = time.Duration(*userEmail.Expiration) * time.Second
-	} else {
-		expires = time.Hour
-	}
 	res := UserMapping(&u)
-	res.LoginToken, err = auth.MakeJWT(res.ID, cfg.secretString, expires)
+	res.LoginToken, err = auth.MakeJWT(res.ID, cfg.secretString, time.Hour)
 	if err != nil {
 		log.Printf("Error creating JWT: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	res.RefreshToken, err = cfg.SaveRefreshToken(res.ID)
+	if err != nil {
+		log.Printf("Error creating Refresh Token: %s", err)
 		w.WriteHeader(500)
 		return
 	}
