@@ -17,6 +17,7 @@ func UserMapping(user *database.User) User {
 	res.CreatedAt = user.CreatedAt
 	res.UpdatedAt = user.UpdatedAt
 	res.Email = user.Email
+	res.IsChirpyRed = user.IsChirpyRed.Bool
 	return res
 }
 
@@ -122,4 +123,38 @@ func (cfg *apiConfig) handlerUpdateUsers(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write(dat)
+}
+
+func (cfg *apiConfig) handlerUpgradeUser(w http.ResponseWriter, r *http.Request) {
+	type inRequest struct {
+		Event string `json:"event"`
+		Data  struct {
+			UserID string `json:"user_id"`
+		} `json:"data"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	userEvent := inRequest{}
+	err := decoder.Decode(&userEvent)
+	if err != nil {
+		log.Printf("Error decoding event: %s", err)
+		w.WriteHeader(500)
+		return
+	}
+	if userEvent.Event != "user.upgraded" {
+		w.WriteHeader(204)
+		return
+	}
+	userID, err := uuid.Parse(userEvent.Data.UserID)
+	if err != nil {
+		log.Printf("Error parsing user uuid: %s", err)
+		w.WriteHeader(404)
+		return
+	}
+	err = cfg.dbQueries.UpgradeUser(r.Context(), userID)
+	if err != nil {
+		log.Printf("Error updating user: %s", err)
+		w.WriteHeader(404)
+		return
+	}
+	w.WriteHeader(204)
 }

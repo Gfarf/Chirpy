@@ -216,5 +216,11 @@ func (cfg *apiConfig) handlerDelChirp(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(403)
 		return
 	}
+	err = cfg.dbQueries.DeleteChirpByID(r.Context(), uuidChirpID)
+	if err != nil {
+		log.Printf("Error Deleting Chirp: %s", err)
+		w.WriteHeader(500)
+		return
+	}
 	w.WriteHeader(204)
 }

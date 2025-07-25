@@ -31,6 +31,7 @@ type User struct {
 	Email        string    `json:"email"`
 	LoginToken   string    `json:"token"`
 	RefreshToken string    `json:"refresh_token"`
+	IsChirpyRed  bool      `json:"is_chirpy_red"`
 }
 
 type StoringChirp struct {
@@ -84,6 +85,7 @@ func main() {
 	mux.HandleFunc("POST /api/revoke", apiCfg.handlerRevoke)
 	mux.HandleFunc("PUT /api/users", apiCfg.handlerUpdateUsers)
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.handlerDelChirp)
+	mux.HandleFunc("POST /api/polka/webhooks", apiCfg.handlerUpgradeUser)
 
 	server := &http.Server{Addr: ":" + port, Handler: mux}
 	log.Fatal(server.ListenAndServe())

@@ -50,6 +50,20 @@ func (q *Queries) DeleteChirpByID(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const editChirpByID = `-- name: EditChirpByID :exec
+UPDATE chirps SET body = $1, updated_at = NOW() WHERE id = $2
+`
+
+type EditChirpByIDParams struct {
+	Body string
+	ID   uuid.UUID
+}
+
+func (q *Queries) EditChirpByID(ctx context.Context, arg EditChirpByIDParams) error {
+	_, err := q.db.ExecContext(ctx, editChirpByID, arg.Body, arg.ID)
+	return err
+}
+
 const getChirpsAll = `-- name: GetChirpsAll :many
 SELECT id, created_at, updated_at, body, user_id FROM chirps ORDER BY created_at ASC
 `

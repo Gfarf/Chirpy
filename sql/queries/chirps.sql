@@ -18,3 +18,5 @@ SELECT * FROM chirps WHERE id = $1;
 -- name: DeleteChirpByID :exec
 DELETE FROM chirps WHERE id = $1;
 
+-- name: EditChirpByID :exec
+UPDATE chirps SET body = $1, updated_at = NOW() WHERE id = $2;
