@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/Gfarf/Chirpy/internal/auth"
 	"github.com/Gfarf/Chirpy/internal/database"
@@ -136,18 +137,41 @@ func (cfg *apiConfig) handlerChirp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cfg *apiConfig) handlerGetAllChirps(w http.ResponseWriter, r *http.Request) {
-	fAll, err := cfg.dbQueries.GetChirpsAll(r.Context())
-	if err != nil {
-		log.Printf("Error getting chirps from database: %s", err)
-		w.WriteHeader(500)
-		return
+	s := r.URL.Query().Get("author_id")
+	fAll := make([]database.Chirp, 0)
+	var err error
+	if s == "" {
+		fAll, err = cfg.dbQueries.GetChirpsAll(r.Context())
+		if err != nil {
+			log.Printf("Error getting chirps from database: %s", err)
+			w.WriteHeader(500)
+			return
+		}
+	} else {
+		userID, err := uuid.Parse(s)
+		if err != nil {
+			log.Printf("Error parsing user id uuid: %s", err)
+			w.WriteHeader(404)
+			return
+		}
+		fAll, err = cfg.dbQueries.GetAllChirpsForUser(r.Context(), userID)
+		if err != nil {
+			log.Printf("Error getting chirps from database: %s", err)
+			w.WriteHeader(500)
+			return
+		}
 	}
 	allList := []StoringChirp{}
 	for _, fRes := range fAll {
 		fRes2 := mappingChirp(&fRes)
 		allList = append(allList, fRes2)
 	}
-
+	s = r.URL.Query().Get("sort")
+	if s == "desc" {
+		sort.Slice(allList, func(i, j int) bool {
+			return allList[i].CreatedAt.After(allList[j].CreatedAt)
+		})
+	}
 	dat, err := json.Marshal(allList)
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)

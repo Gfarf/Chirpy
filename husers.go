@@ -132,14 +132,26 @@ func (cfg *apiConfig) handlerUpgradeUser(w http.ResponseWriter, r *http.Request)
 			UserID string `json:"user_id"`
 		} `json:"data"`
 	}
+	rApiKey, err := auth.GetAPIKey(r.Header)
+	if err != nil {
+		log.Printf("Error getting Api Key: %s", err)
+		w.WriteHeader(401)
+		return
+	}
+	if rApiKey != cfg.polkaKey {
+		log.Printf("Error comparing Api Key: %s", err)
+		w.WriteHeader(401)
+		return
+	}
 	decoder := json.NewDecoder(r.Body)
 	userEvent := inRequest{}
-	err := decoder.Decode(&userEvent)
+	err = decoder.Decode(&userEvent)
 	if err != nil {
 		log.Printf("Error decoding event: %s", err)
 		w.WriteHeader(500)
 		return
 	}
+
 	if userEvent.Event != "user.upgraded" {
 		w.WriteHeader(204)
 		return

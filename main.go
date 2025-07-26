@@ -22,6 +22,7 @@ type apiConfig struct {
 	dbQueries      *database.Queries
 	plataform      string
 	secretString   string
+	polkaKey       string
 }
 
 type User struct {
@@ -57,6 +58,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	plat := os.Getenv("PLATFORM")
 	secret := os.Getenv("SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
 	const filepathRoot = "."
 	const port = "8080"
 	db, err := sql.Open("postgres", dbURL)
@@ -70,6 +72,7 @@ func main() {
 	apiCfg.dbQueries = database.New(db)
 	apiCfg.plataform = plat
 	apiCfg.secretString = secret
+	apiCfg.polkaKey = polkaKey
 	fmt.Printf("Plataform - %s\n", plat)
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
 

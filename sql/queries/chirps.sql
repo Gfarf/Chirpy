@@ -20,3 +20,6 @@ DELETE FROM chirps WHERE id = $1;
 
 -- name: EditChirpByID :exec
 UPDATE chirps SET body = $1, updated_at = NOW() WHERE id = $2;
+
+-- name: GetAllChirpsForUser :many
+SELECT * FROM chirps WHERE user_id = $1 ORDER BY created_at ASC;
